@@ -90,6 +90,6 @@ func cmdTagIncrementMinor(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("Increment tag minor from %s => %s (%s)", oldTagStr, newTagStr, head.Hash().String())
+	fmt.Printf("Increment tag minor from %s => %s (%s)\n", oldTagStr, newTagStr, head.Hash().String())
 	return nil
 }
