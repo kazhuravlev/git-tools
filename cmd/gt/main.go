@@ -6,6 +6,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"os"
+	"strings"
 )
 import "github.com/urfave/cli"
 
@@ -52,10 +53,13 @@ func cmdTagIncrementMinor(c *cli.Context) error {
 		return err
 	}
 
-	maxVersion := semver.MustParse("v0.1.0")
+	maxVersion := semver.MustParse("v0.0.0")
+	hasPrefixV := true
 	err = tagrefs.ForEach(func(t *plumbing.Reference) error {
-		fmt.Println("1", t.Name().Short())
-		version, err := semver.NewVersion(t.Name().Short())
+		tagName := t.Name().Short()
+		hasPrefixV = strings.HasPrefix(tagName, "v")
+
+		version, err := semver.NewVersion(tagName)
 		if err != nil {
 			return err
 		}
@@ -69,6 +73,23 @@ func cmdTagIncrementMinor(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("Found max tag", maxVersion.String())
+	newMaxTag := maxVersion.IncMinor()
+	oldTagStr := maxVersion.String()
+	newTagStr := newMaxTag.String()
+	if hasPrefixV {
+		oldTagStr = "v" + oldTagStr
+		newTagStr = "v" + newTagStr
+	}
+
+	head, err := r.Head()
+	if err != nil {
+		return err
+	}
+
+	if _, err := r.CreateTag(newTagStr, head.Hash(), nil); err != nil {
+		return err
+	}
+
+	fmt.Printf("Increment tag minor from %s => %s (%s)", oldTagStr, newTagStr, head.Hash().String())
 	return nil
 }
