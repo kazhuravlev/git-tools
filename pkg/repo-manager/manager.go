@@ -144,8 +144,17 @@ func (m *Manager) GetTagsSemverTopN(n int) ([]SemverTag, error) {
 // IncrementSemverTag will increment max semver tag and write tag to repo
 func (m *Manager) IncrementSemverTag(c Component) (*SemverTag, *SemverTag, error) {
 	maxTag, err := m.GetTagsSemverMax()
-	if err != nil {
+	switch errors.Cause(err) {
+	default:
 		return nil, nil, errors.Wrap(err, "get max semver tag")
+	case ErrNotFound:
+		if errors.Is(err, ErrNotFound) {
+			maxTag = &SemverTag{
+				Version: *semver.MustParse("v0.0.0"),
+				Ref:     nil,
+			}
+		}
+	case nil:
 	}
 
 	newVersion := maxTag.Version
