@@ -2,35 +2,59 @@ package main
 
 import (
 	"fmt"
-	"github.com/Masterminds/semver"
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
+	repomanager "github.com/kazhuravlev/git-tools/pkg/repo-manager"
+	"github.com/pkg/errors"
 	"os"
-	"strings"
 )
 import "github.com/urfave/cli"
 
-func main() {
-	a := cli.NewApp()
-	a.Version = "1.0.1"
-	a.Name = "gt"
-	a.Usage = "Git tools"
+const (
+	flagRepoPath = "repo"
+)
 
-	a.Commands = []cli.Command{
-		{
-			Name:      "tag",
-			ShortName: "t",
-			Usage:     "manage tags",
-			Subcommands: []cli.Command{
-				{
-					Name:      "increment",
-					ShortName: "i",
-					Subcommands: []cli.Command{
-						{
-							Name:      "minor",
-							ShortName: "min",
-							Action:    cmdTagIncrementMinor,
+func main() {
+	a := &cli.App{
+		Version: "0.1.0",
+		Name:    "gt",
+		Usage:   "Git tools",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     flagRepoPath,
+				Required: false,
+				Value:    ".",
+			},
+		},
+		Commands: []cli.Command{
+			{
+				Name:      "tag",
+				ShortName: "t",
+				Usage:     "manage tags",
+				Subcommands: []cli.Command{
+					{
+						Name:      "increment",
+						ShortName: "i",
+						Subcommands: []cli.Command{
+							{
+								Name:      "major",
+								ShortName: "maj",
+								Action:    buildTagIncrementor(repomanager.ComponentMajor),
+							},
+							{
+								Name:      "minor",
+								ShortName: "min",
+								Action:    buildTagIncrementor(repomanager.ComponentMinor),
+							},
+							{
+								Name:      "patch",
+								ShortName: "pat",
+								Action:    buildTagIncrementor(repomanager.ComponentPatch),
+							},
 						},
+					},
+					{
+						Name:      "last",
+						ShortName: "l",
+						Action:    cmdTagGetLast,
 					},
 				},
 			},
@@ -38,58 +62,54 @@ func main() {
 	}
 
 	if err := a.Run(os.Args); err != nil {
-		panic("cannot run command: " + err.Error())
+		fmt.Println("Error: " + err.Error())
 	}
 }
 
-func cmdTagIncrementMinor(c *cli.Context) error {
-	r, err := git.PlainOpen(".")
-	if err != nil {
-		return err
-	}
+func buildTagIncrementor(component repomanager.Component) func(ctx *cli.Context) error {
+	return func(c *cli.Context) error {
+		repoPath := c.GlobalString(flagRepoPath)
+		if repoPath == "" {
+			return errors.New("path to repo must be set by flag " + flagRepoPath)
+		}
 
-	tagrefs, err := r.Tags()
-	if err != nil {
-		return err
-	}
-
-	maxVersion := semver.MustParse("v0.0.0")
-	hasPrefixV := true
-	err = tagrefs.ForEach(func(t *plumbing.Reference) error {
-		tagName := t.Name().Short()
-		hasPrefixV = strings.HasPrefix(tagName, "v")
-
-		version, err := semver.NewVersion(tagName)
+		m, err := repomanager.New(repoPath)
 		if err != nil {
-			return err
-		}
-		if version.GreaterThan(maxVersion) {
-			maxVersion = version
+			return errors.Wrap(err, "cannot build repo manager")
 		}
 
+		oldTag, newTag, err := m.IncrementSemverTag(component)
+		if err != nil {
+			return errors.Wrap(err, "cannot increment minor")
+		}
+
+		fmt.Printf(
+			"Increment tag component [%s] from %s => %s (%s)\n",
+			string(component),
+			oldTag.TagName(),
+			newTag.TagName(),
+			newTag.Ref.Hash().String(),
+		)
 		return nil
-	})
+	}
+}
+
+func cmdTagGetLast(c *cli.Context) error {
+	repoPath := c.GlobalString(flagRepoPath)
+	if repoPath == "" {
+		return errors.New("path to repo must be set by flag " + flagRepoPath)
+	}
+
+	m, err := repomanager.New(repoPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "cannot build repo manager")
 	}
 
-	newMaxTag := maxVersion.IncMinor()
-	oldTagStr := maxVersion.String()
-	newTagStr := newMaxTag.String()
-	if hasPrefixV {
-		oldTagStr = "v" + oldTagStr
-		newTagStr = "v" + newTagStr
-	}
-
-	head, err := r.Head()
+	maxTag, err := m.GetTagsSemverMax()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "cannot get max tag")
 	}
 
-	if _, err := r.CreateTag(newTagStr, head.Hash(), nil); err != nil {
-		return err
-	}
-
-	fmt.Printf("Increment tag minor from %s => %s (%s)\n", oldTagStr, newTagStr, head.Hash().String())
+	fmt.Printf("%s (%s)\n", maxTag.TagName(), maxTag.Ref.Hash())
 	return nil
 }
