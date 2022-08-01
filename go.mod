@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/go-git/go-git/v5 v5.4.2
+	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli v1.22.9
 )
 
@@ -27,4 +28,5 @@ require (
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
