@@ -3,7 +3,7 @@ module github.com/kazhuravlev/git-tools
 go 1.17
 
 require (
-	github.com/Masterminds/semver v1.5.0
+	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli v1.22.9

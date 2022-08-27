@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	repomanager "github.com/kazhuravlev/git-tools/pkg/repo-manager"
+	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
 	"github.com/pkg/errors"
 	"os"
 )
