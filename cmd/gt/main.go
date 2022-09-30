@@ -22,6 +22,7 @@ func main() {
 				Name:     flagRepoPath,
 				Required: false,
 				Value:    ".",
+				Usage:    "path to the repo which you want to manage",
 			},
 		},
 		Commands: []cli.Command{
@@ -33,28 +34,33 @@ func main() {
 					{
 						Name:      "increment",
 						ShortName: "i",
+						Usage:     "find the last semver tag and increment the concrete part",
 						Subcommands: []cli.Command{
 							{
 								Name:      "major",
 								ShortName: "maj",
 								Action:    buildTagIncrementor(repomanager.ComponentMajor),
+								Usage:     "increment major part of semver",
 							},
 							{
 								Name:      "minor",
 								ShortName: "min",
 								Action:    buildTagIncrementor(repomanager.ComponentMinor),
+								Usage:     "increment minor part of semver",
 							},
 							{
 								Name:      "patch",
 								ShortName: "pat",
 								Action:    buildTagIncrementor(repomanager.ComponentPatch),
+								Usage:     "increment patch part of semver",
 							},
 						},
 					},
 					{
 						Name:      "last",
 						ShortName: "l",
-						Action:    cmdTagGetLast,
+						Action:    cmdTagGetSemverLast,
+						Usage:     "show last semver tag",
 					},
 				},
 			},
@@ -94,7 +100,7 @@ func buildTagIncrementor(component repomanager.Component) func(ctx *cli.Context)
 	}
 }
 
-func cmdTagGetLast(c *cli.Context) error {
+func cmdTagGetSemverLast(c *cli.Context) error {
 	repoPath := c.GlobalString(flagRepoPath)
 	if repoPath == "" {
 		return errors.New("path to repo must be set by flag " + flagRepoPath)
