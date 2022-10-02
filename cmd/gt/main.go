@@ -64,6 +64,12 @@ func main() {
 					},
 				},
 			},
+			{
+				Name:      "lint",
+				ShortName: "l",
+				Usage:     "run linter",
+				Action:    cmdLint,
+			},
 		},
 	}
 
@@ -117,5 +123,42 @@ func cmdTagGetSemverLast(c *cli.Context) error {
 	}
 
 	fmt.Printf("%s (%s)\n", maxTag.TagName(), maxTag.Ref.Hash())
+	return nil
+}
+
+func cmdLint(c *cli.Context) error {
+	repoPath := c.GlobalString(flagRepoPath)
+	if repoPath == "" {
+		return errors.New("path to repo must be set by flag " + flagRepoPath)
+	}
+
+	m, err := repomanager.New(repoPath)
+	if err != nil {
+		return errors.Wrap(err, "cannot build repo manager")
+	}
+
+	tags, err := m.GetTagsSemverTopN(100)
+	if err != nil {
+		return errors.Wrap(err, "cannot last semver tags")
+	}
+
+	if len(tags) == 0 {
+		return nil
+	}
+
+	hasPrefix := tags[0].HasPrefixV()
+	var hasErrors bool
+	for i := range tags {
+		tag := &tags[i]
+		if tag.HasPrefixV() != hasPrefix {
+			fmt.Printf("Tag `%s` not in one style with others.\n", tag.TagName())
+			hasErrors = true
+		}
+	}
+	
+	if hasErrors {
+		os.Exit(1)
+	}
+
 	return nil
 }
