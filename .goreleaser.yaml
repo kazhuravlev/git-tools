@@ -1,0 +1,70 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: gt
+    binary: gt
+    main: ./cmd/gt
+    ldflags:
+      - -s
+      - -w
+      - -X main.version={{.Summary}}
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+dockers:
+  - id: gt
+    goos: linux
+    goarch: amd64
+    ids:
+      - gt
+    image_templates:
+      - "kazhuravlev/gt:latest"
+      - "kazhuravlev/gt:{{ .Tag }}"
+      - "kazhuravlev/gt:v{{ .Major }}"
+      - "kazhuravlev/gt:v{{ .Major }}.{{ .Minor }}"
+    skip_push: "true"
+    dockerfile: 'Dockerfile'
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+brews:
+  - name: git-tools
+    goarm: "6"
+    goamd64: v3
+    tap:
+      owner: kazhuravlev
+      name: git-tools
+      branch: master
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    url_template: "http://github.com/kazhuravlev/git-tools/releases/{{ .Tag }}/{{ .ArtifactName }}"
+    download_strategy: CurlDownloadStrategy
+    custom_require: custom_download_strategy
+    commit_author:
+      name: goreleaserbot
+      email: kazhuravlev+goreleaserbot@fastmail.com
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    folder: Formula
+    homepage: "https://github.com/kazhuravlev/git-tools"
+    description: "Git tools allow you to manage your git repository easily."
+    license: "MIT"
+    skip_upload: "true"
+    dependencies:
+      - name: git
+    test: |
+      system "#{bin}/gt help"
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"

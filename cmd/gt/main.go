@@ -12,9 +12,13 @@ const (
 	flagRepoPath = "repo"
 )
 
+var (
+	version = "unknown-local-build"
+)
+
 func main() {
 	a := &cli.App{
-		Version: "0.1.0",
+		Version: version,
 		Name:    "gt",
 		Usage:   "Git tools",
 		Flags: []cli.Flag{
@@ -155,7 +159,7 @@ func cmdLint(c *cli.Context) error {
 			hasErrors = true
 		}
 	}
-	
+
 	if hasErrors {
 		os.Exit(1)
 	}

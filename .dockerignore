@@ -1,0 +1,7 @@
+.git/
+bin/
+dist/
+Dockerfile
+.goreleaser.yaml
+.gitignore
+README.md
