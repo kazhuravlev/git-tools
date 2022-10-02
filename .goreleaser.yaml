@@ -27,7 +27,6 @@ dockers:
       - "kazhuravlev/gt:{{ .Tag }}"
       - "kazhuravlev/gt:v{{ .Major }}"
       - "kazhuravlev/gt:v{{ .Major }}.{{ .Minor }}"
-    skip_push: "true"
     dockerfile: 'Dockerfile'
     use: buildx
     build_flag_templates:
@@ -52,7 +51,6 @@ brews:
     homepage: "https://github.com/kazhuravlev/git-tools"
     description: "Git tools allow you to manage your git repository easily."
     license: "MIT"
-    skip_upload: "true"
     dependencies:
       - name: git
     test: |
