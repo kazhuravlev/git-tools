@@ -16,9 +16,32 @@ See [Usage](#Usage).
 
 ## Installation
 
-`go install github.com/kazhuravlev/git-tools/cmd/gt`
+**Golang**
+
+```shell
+go install github.com/kazhuravlev/git-tools/cmd/gt@latest
+```
+
+**Homebrew**
+
+```shell 
+brew install kazhuravlev/git-tools/git-tools
+```
+
+**Docker (zsh)** (will work only in current directory)
+
+```shell
+echo 'alias gt="docker run -it --rm -v `pwd`:/workdir kazhuravlev/gt:latest"' >> ~/.zshrc
+ ```
 
 ## Usage
+
+By default, `gt` works with the repo in the current directory. If you want to
+specify another path to repo - add `--repo=/path/to/repo` flag.
+
+```shell
+gt --repo /path/to/repo tag last
+```
 
 | Command               | Alias     | Action                                                                   |
 |-----------------------|-----------|--------------------------------------------------------------------------|
@@ -27,4 +50,3 @@ See [Usage](#Usage).
 | `tag increment minor` | `t i min` | Find the last semver tag, increment minor part and add tag to local repo |
 | `tag increment patch` | `t i pat` | Find the last semver tag, increment patch part and add tag to local repo |
 | `lint`                | `l`       | Run linter, that check the problems.                                     |
-
