@@ -118,3 +118,5 @@ Temporary Items
 
 .idea
 bin/
+
+dist/
