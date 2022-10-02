@@ -27,3 +27,4 @@ See [Usage](#Usage).
 | `tag increment minor` | `t i min` | Find the last semver tag, increment minor part and add tag to local repo |
 | `tag increment patch` | `t i pat` | Find the last semver tag, increment patch part and add tag to local repo |
 | `lint`                | `l`       | Run linter, that check the problems.                                     |
+
