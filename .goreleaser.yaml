@@ -41,8 +41,6 @@ brews:
       branch: master
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     url_template: "https://github.com/kazhuravlev/git-tools/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    download_strategy: CurlDownloadStrategy
-    custom_require: custom_download_strategy
     commit_author:
       name: goreleaserbot
       email: kazhuravlev+goreleaserbot@fastmail.com
