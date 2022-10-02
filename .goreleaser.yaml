@@ -40,7 +40,7 @@ brews:
       name: homebrew-git-tools
       branch: master
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    url_template: "http://github.com/kazhuravlev/git-tools/releases/{{ .Tag }}/{{ .ArtifactName }}"
+    url_template: "http://github.com/kazhuravlev/homebrew-git-tools/releases/{{ .Tag }}/{{ .ArtifactName }}"
     download_strategy: CurlDownloadStrategy
     custom_require: custom_download_strategy
     commit_author:
