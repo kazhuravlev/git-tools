@@ -49,8 +49,6 @@ brews:
     homepage: "https://github.com/kazhuravlev/git-tools"
     description: "Git tools allow you to manage your git repository easily."
     license: "MIT"
-    dependencies:
-      - name: git
     test: |
       system "#{bin}/gt help"
 archives:
