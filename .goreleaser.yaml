@@ -38,7 +38,7 @@ brews:
     goamd64: v3
     tap:
       owner: kazhuravlev
-      name: git-tools
+      name: homebrew-git-tools
       branch: master
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     url_template: "http://github.com/kazhuravlev/git-tools/releases/{{ .Tag }}/{{ .ArtifactName }}"
