@@ -48,10 +48,10 @@ specify another path to repo - add `--repo=/path/to/repo` flag.
 gt --repo /path/to/repo tag last
 ```
 
-| Command               | Alias     | Action                                                                   |
-|-----------------------|-----------|--------------------------------------------------------------------------|
-| `tag last`            | `t l`     | Show last semver tag in this repo                                        |
-| `tag increment major` | `t i maj` | Find the last semver tag, increment major part and add tag to local repo |
-| `tag increment minor` | `t i min` | Find the last semver tag, increment minor part and add tag to local repo |
-| `tag increment patch` | `t i pat` | Find the last semver tag, increment patch part and add tag to local repo |
-| `lint`                | `l`       | Run linter, that check the problems.                                     |
+| Command               | Action                                                                   |
+|-----------------------|--------------------------------------------------------------------------|
+| `tag last`            | Show last semver tag in this repo                                        |
+| `tag increment major` | Find the last semver tag, increment major part and add tag to local repo |
+| `tag increment minor` | Find the last semver tag, increment minor part and add tag to local repo |
+| `tag increment patch` | Find the last semver tag, increment patch part and add tag to local repo |
+| `lint`                | Run linter, that check the problems.                                     |
