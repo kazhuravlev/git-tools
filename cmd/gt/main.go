@@ -4,9 +4,9 @@ import (
 	"fmt"
 	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
 	"github.com/pkg/errors"
+	"github.com/urfave/cli/v3"
 	"os"
 )
-import "github.com/urfave/cli"
 
 const (
 	flagRepoPath = "repo"
@@ -29,50 +29,50 @@ func main() {
 				Usage:    "path to the repo which you want to manage",
 			},
 		},
-		Commands: []cli.Command{
+		Commands: []*cli.Command{
 			{
-				Name:      "tag",
-				ShortName: "t",
-				Usage:     "manage tags",
-				Subcommands: []cli.Command{
+				Name:    "tag",
+				Aliases: []string{"t"},
+				Usage:   "manage tags",
+				Commands: []*cli.Command{
 					{
-						Name:      "increment",
-						ShortName: "i",
-						Usage:     "find the last semver tag and increment the concrete part",
-						Subcommands: []cli.Command{
+						Name:    "increment",
+						Aliases: []string{"i"},
+						Usage:   "find the last semver tag and increment the concrete part",
+						Commands: []*cli.Command{
 							{
-								Name:      "major",
-								ShortName: "maj",
-								Action:    buildTagIncrementor(repomanager.ComponentMajor),
-								Usage:     "increment major part of semver",
+								Name:    "major",
+								Aliases: []string{"maj"},
+								Action:  buildTagIncrementor(repomanager.ComponentMajor),
+								Usage:   "increment major part of semver",
 							},
 							{
-								Name:      "minor",
-								ShortName: "min",
-								Action:    buildTagIncrementor(repomanager.ComponentMinor),
-								Usage:     "increment minor part of semver",
+								Name:    "minor",
+								Aliases: []string{"min"},
+								Action:  buildTagIncrementor(repomanager.ComponentMinor),
+								Usage:   "increment minor part of semver",
 							},
 							{
-								Name:      "patch",
-								ShortName: "pat",
-								Action:    buildTagIncrementor(repomanager.ComponentPatch),
-								Usage:     "increment patch part of semver",
+								Name:    "patch",
+								Aliases: []string{"pat"},
+								Action:  buildTagIncrementor(repomanager.ComponentPatch),
+								Usage:   "increment patch part of semver",
 							},
 						},
 					},
 					{
-						Name:      "last",
-						ShortName: "l",
-						Action:    cmdTagGetSemverLast,
-						Usage:     "show last semver tag",
+						Name:    "last",
+						Aliases: []string{"l"},
+						Action:  cmdTagGetSemverLast,
+						Usage:   "show last semver tag",
 					},
 				},
 			},
 			{
-				Name:      "lint",
-				ShortName: "l",
-				Usage:     "run linter",
-				Action:    cmdLint,
+				Name:    "lint",
+				Aliases: []string{"l"},
+				Usage:   "run linter",
+				Action:  cmdLint,
 			},
 		},
 	}
@@ -84,7 +84,7 @@ func main() {
 
 func buildTagIncrementor(component repomanager.Component) func(ctx *cli.Context) error {
 	return func(c *cli.Context) error {
-		repoPath := c.GlobalString(flagRepoPath)
+		repoPath := c.String(flagRepoPath)
 		if repoPath == "" {
 			return errors.New("path to repo must be set by flag " + flagRepoPath)
 		}
@@ -111,7 +111,7 @@ func buildTagIncrementor(component repomanager.Component) func(ctx *cli.Context)
 }
 
 func cmdTagGetSemverLast(c *cli.Context) error {
-	repoPath := c.GlobalString(flagRepoPath)
+	repoPath := c.String(flagRepoPath)
 	if repoPath == "" {
 		return errors.New("path to repo must be set by flag " + flagRepoPath)
 	}
@@ -131,7 +131,7 @@ func cmdTagGetSemverLast(c *cli.Context) error {
 }
 
 func cmdLint(c *cli.Context) error {
-	repoPath := c.GlobalString(flagRepoPath)
+	repoPath := c.String(flagRepoPath)
 	if repoPath == "" {
 		return errors.New("path to repo must be set by flag " + flagRepoPath)
 	}
