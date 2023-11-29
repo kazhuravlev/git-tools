@@ -45,19 +45,19 @@ func main() {
 							{
 								Name:    "major",
 								Aliases: []string{"maj"},
-								Action:  buildTagIncrementor(repomanager.ComponentMajor),
+								Action:  withManager(buildTagIncrementor(repomanager.ComponentMajor)),
 								Usage:   "increment major part of semver",
 							},
 							{
 								Name:    "minor",
 								Aliases: []string{"min"},
-								Action:  buildTagIncrementor(repomanager.ComponentMinor),
+								Action:  withManager(buildTagIncrementor(repomanager.ComponentMinor)),
 								Usage:   "increment minor part of semver",
 							},
 							{
 								Name:    "patch",
 								Aliases: []string{"pat"},
-								Action:  buildTagIncrementor(repomanager.ComponentPatch),
+								Action:  withManager(buildTagIncrementor(repomanager.ComponentPatch)),
 								Usage:   "increment patch part of semver",
 							},
 						},
@@ -84,8 +84,8 @@ func main() {
 	}
 }
 
-func buildTagIncrementor(component repomanager.Component) func(ctx *cli.Context) error {
-	return func(c *cli.Context) error {
+func buildTagIncrementor(component repomanager.Component) func(*cli.Context, *repomanager.Manager) error {
+	return func(c *cli.Context, m *repomanager.Manager) error {
 		repoPath := c.String(flagRepoPath)
 		if repoPath == "" {
 			return errors.New("path to repo must be set by flag " + flagRepoPath)
