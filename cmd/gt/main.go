@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
 	"github.com/pkg/errors"
@@ -17,7 +18,7 @@ var (
 )
 
 func main() {
-	a := &cli.App{
+	a := &cli.Command{
 		Version: version,
 		Name:    "gt",
 		Usage:   "Git tools",
@@ -77,7 +78,7 @@ func main() {
 		},
 	}
 
-	if err := a.Run(os.Args); err != nil {
+	if err := a.Run(context.Background(), os.Args); err != nil {
 		fmt.Println("Error: " + err.Error())
 	}
 }
