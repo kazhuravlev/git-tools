@@ -35,7 +35,7 @@ brews:
   - name: git-tools
     goarm: "6"
     goamd64: v3
-    tap:
+    repository:
       owner: kazhuravlev
       name: homebrew-git-tools
       branch: master
