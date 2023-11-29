@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
-	"github.com/pkg/errors"
-	"github.com/urfave/cli/v3"
 	"os"
+
+	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
+	"github.com/urfave/cli/v3"
 )
 
 const (
@@ -92,12 +93,12 @@ func buildTagIncrementor(component repomanager.Component) func(ctx *cli.Context)
 
 		m, err := repomanager.New(repoPath)
 		if err != nil {
-			return errors.Wrap(err, "cannot build repo manager")
+			return fmt.Errorf("cannot build repo manager: %w", err)
 		}
 
 		oldTag, newTag, err := m.IncrementSemverTag(component)
 		if err != nil {
-			return errors.Wrap(err, "cannot increment minor")
+			return fmt.Errorf("cannot increment minor: %w", err)
 		}
 
 		fmt.Printf(
@@ -119,12 +120,12 @@ func cmdTagGetSemverLast(c *cli.Context) error {
 
 	m, err := repomanager.New(repoPath)
 	if err != nil {
-		return errors.Wrap(err, "cannot build repo manager")
+		return fmt.Errorf("cannot build repo manager: %w", err)
 	}
 
 	maxTag, err := m.GetTagsSemverMax()
 	if err != nil {
-		return errors.Wrap(err, "cannot get max tag")
+		return fmt.Errorf("cannot get max tag: %w", err)
 	}
 
 	fmt.Printf("%s (%s)\n", maxTag.TagName(), maxTag.Ref.Hash())
@@ -139,12 +140,12 @@ func cmdLint(c *cli.Context) error {
 
 	m, err := repomanager.New(repoPath)
 	if err != nil {
-		return errors.Wrap(err, "cannot build repo manager")
+		return fmt.Errorf("cannot build repo manager: %w", err)
 	}
 
 	tags, err := m.GetTagsSemverTopN(100)
 	if err != nil {
-		return errors.Wrap(err, "cannot last semver tags")
+		return fmt.Errorf("cannot last semver tags: %w", err)
 	}
 
 	if len(tags) == 0 {

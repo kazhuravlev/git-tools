@@ -1,12 +1,14 @@
 package repomanager
 
 import (
+	"errors"
+	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/pkg/errors"
-	"sort"
-	"strings"
 )
 
 type Component string
@@ -26,7 +28,7 @@ type Manager struct {
 func New(path string) (*Manager, error) {
 	r, err := git.PlainOpen(path)
 	if err != nil {
-		return nil, errors.Wrap(err, "open git repo")
+		return nil, fmt.Errorf("open git repo: %w", err)
 	}
 
 	return &Manager{
@@ -37,7 +39,7 @@ func New(path string) (*Manager, error) {
 func (m *Manager) GetTagsAll() ([]*plumbing.Reference, error) {
 	tagReferences, err := m.repo.Tags()
 	if err != nil {
-		return nil, errors.Wrap(err, "get repo tags")
+		return nil, fmt.Errorf("get repo tags: %w", err)
 	}
 
 	var tags []*plumbing.Reference
@@ -46,7 +48,7 @@ func (m *Manager) GetTagsAll() ([]*plumbing.Reference, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "get repo tags")
+		return nil, fmt.Errorf("get repo tags: %w", err)
 	}
 
 	return tags, nil
@@ -69,7 +71,7 @@ func (t SemverTag) TagName() string {
 func (m *Manager) GetTagsSemver() ([]SemverTag, error) {
 	references, err := m.GetTagsAll()
 	if err != nil {
-		return nil, errors.Wrap(err, "get all tags")
+		return nil, fmt.Errorf("get all tags: %w", err)
 	}
 
 	res := make([]SemverTag, 0, len(references))
@@ -96,7 +98,7 @@ func (m *Manager) GetTagsSemver() ([]SemverTag, error) {
 func (m *Manager) GetTagsSemverMax() (*SemverTag, error) {
 	tags, err := m.GetTagsSemver()
 	if err != nil {
-		return nil, errors.Wrap(err, "get semver tags")
+		return nil, fmt.Errorf("get semver tags: %w", err)
 	}
 
 	maxTag := SemverTag{
@@ -112,7 +114,7 @@ func (m *Manager) GetTagsSemverMax() (*SemverTag, error) {
 	}
 
 	if !found {
-		return nil, errors.Wrap(ErrNotFound, "has no semver tags")
+		return nil, fmt.Errorf("has no semver tags: %w", ErrNotFound)
 	}
 
 	return &maxTag, nil
@@ -122,7 +124,7 @@ func (m *Manager) GetTagsSemverMax() (*SemverTag, error) {
 func (m *Manager) GetTagsSemverTopN(n int) ([]SemverTag, error) {
 	tags, err := m.GetTagsSemver()
 	if err != nil {
-		return nil, errors.Wrap(err, "get semver tags")
+		return nil, fmt.Errorf("get semver tags: %w", err)
 	}
 
 	sort.SliceStable(tags, func(i, j int) bool {
@@ -144,23 +146,20 @@ func (m *Manager) GetTagsSemverTopN(n int) ([]SemverTag, error) {
 // IncrementSemverTag will increment max semver tag and write tag to repo
 func (m *Manager) IncrementSemverTag(c Component) (*SemverTag, *SemverTag, error) {
 	maxTag, err := m.GetTagsSemverMax()
-	switch errors.Cause(err) {
-	default:
-		return nil, nil, errors.Wrap(err, "get max semver tag")
-	case ErrNotFound:
-		if errors.Is(err, ErrNotFound) {
-			maxTag = &SemverTag{
-				Version: *semver.MustParse("v0.0.0"),
-				Ref:     nil,
-			}
+	switch {
+	case errors.Is(err, ErrNotFound):
+		maxTag = &SemverTag{
+			Version: *semver.MustParse("v0.0.0"),
+			Ref:     nil,
 		}
-	case nil:
+	case err != nil:
+		return nil, nil, fmt.Errorf("get max semver tag: %w", err)
+	case err == nil:
 	}
 
 	newVersion := maxTag.Version
 	switch c {
 	default:
-		return nil, nil, errors.Wrap(err, "unknown component")
 	case ComponentMajor:
 		newVersion = newVersion.IncMajor()
 	case ComponentMinor:
@@ -176,12 +175,12 @@ func (m *Manager) IncrementSemverTag(c Component) (*SemverTag, *SemverTag, error
 
 	head, err := m.repo.Head()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "get repo head")
+		return nil, nil, fmt.Errorf("get repo head: %w", err)
 	}
 
 	ref, err := m.repo.CreateTag(versionStr, head.Hash(), nil)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "create tag")
+		return nil, nil, fmt.Errorf("create tag: %w", err)
 	}
 
 	return maxTag, &SemverTag{
