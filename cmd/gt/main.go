@@ -74,7 +74,7 @@ func main() {
 				Name:    "lint",
 				Aliases: []string{"l"},
 				Usage:   "run linter",
-				Action:  cmdLint,
+				Action:  withManager(cmdLint),
 			},
 		},
 	}
@@ -132,17 +132,7 @@ func cmdTagGetSemverLast(c *cli.Context) error {
 	return nil
 }
 
-func cmdLint(c *cli.Context) error {
-	repoPath := c.String(flagRepoPath)
-	if repoPath == "" {
-		return errors.New("path to repo must be set by flag " + flagRepoPath)
-	}
-
-	m, err := repomanager.New(repoPath)
-	if err != nil {
-		return fmt.Errorf("cannot build repo manager: %w", err)
-	}
-
+func cmdLint(c *cli.Context, m *repomanager.Manager) error {
 	tags, err := m.GetTagsSemverTopN(100)
 	if err != nil {
 		return fmt.Errorf("cannot last semver tags: %w", err)
