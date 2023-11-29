@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
-	"github.com/pkg/errors"
-	"github.com/urfave/cli/v3"
 	"os"
+
+	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
+	"github.com/urfave/cli/v3"
 )
 
 const (
@@ -44,19 +45,19 @@ func main() {
 							{
 								Name:    "major",
 								Aliases: []string{"maj"},
-								Action:  buildTagIncrementor(repomanager.ComponentMajor),
+								Action:  withManager(buildTagIncrementor(repomanager.ComponentMajor)),
 								Usage:   "increment major part of semver",
 							},
 							{
 								Name:    "minor",
 								Aliases: []string{"min"},
-								Action:  buildTagIncrementor(repomanager.ComponentMinor),
+								Action:  withManager(buildTagIncrementor(repomanager.ComponentMinor)),
 								Usage:   "increment minor part of semver",
 							},
 							{
 								Name:    "patch",
 								Aliases: []string{"pat"},
-								Action:  buildTagIncrementor(repomanager.ComponentPatch),
+								Action:  withManager(buildTagIncrementor(repomanager.ComponentPatch)),
 								Usage:   "increment patch part of semver",
 							},
 						},
@@ -64,7 +65,7 @@ func main() {
 					{
 						Name:    "last",
 						Aliases: []string{"l"},
-						Action:  cmdTagGetSemverLast,
+						Action:  withManager(cmdTagGetSemverLast),
 						Usage:   "show last semver tag",
 					},
 				},
@@ -73,7 +74,7 @@ func main() {
 				Name:    "lint",
 				Aliases: []string{"l"},
 				Usage:   "run linter",
-				Action:  cmdLint,
+				Action:  withManager(cmdLint),
 			},
 		},
 	}
@@ -83,8 +84,8 @@ func main() {
 	}
 }
 
-func buildTagIncrementor(component repomanager.Component) func(ctx *cli.Context) error {
-	return func(c *cli.Context) error {
+func buildTagIncrementor(component repomanager.Component) func(*cli.Context, *repomanager.Manager) error {
+	return func(c *cli.Context, m *repomanager.Manager) error {
 		repoPath := c.String(flagRepoPath)
 		if repoPath == "" {
 			return errors.New("path to repo must be set by flag " + flagRepoPath)
@@ -92,12 +93,12 @@ func buildTagIncrementor(component repomanager.Component) func(ctx *cli.Context)
 
 		m, err := repomanager.New(repoPath)
 		if err != nil {
-			return errors.Wrap(err, "cannot build repo manager")
+			return fmt.Errorf("cannot build repo manager: %w", err)
 		}
 
 		oldTag, newTag, err := m.IncrementSemverTag(component)
 		if err != nil {
-			return errors.Wrap(err, "cannot increment minor")
+			return fmt.Errorf("cannot increment minor: %w", err)
 		}
 
 		fmt.Printf(
@@ -111,40 +112,20 @@ func buildTagIncrementor(component repomanager.Component) func(ctx *cli.Context)
 	}
 }
 
-func cmdTagGetSemverLast(c *cli.Context) error {
-	repoPath := c.String(flagRepoPath)
-	if repoPath == "" {
-		return errors.New("path to repo must be set by flag " + flagRepoPath)
-	}
-
-	m, err := repomanager.New(repoPath)
-	if err != nil {
-		return errors.Wrap(err, "cannot build repo manager")
-	}
-
+func cmdTagGetSemverLast(c *cli.Context, m *repomanager.Manager) error {
 	maxTag, err := m.GetTagsSemverMax()
 	if err != nil {
-		return errors.Wrap(err, "cannot get max tag")
+		return fmt.Errorf("cannot get max tag: %w", err)
 	}
 
 	fmt.Printf("%s (%s)\n", maxTag.TagName(), maxTag.Ref.Hash())
 	return nil
 }
 
-func cmdLint(c *cli.Context) error {
-	repoPath := c.String(flagRepoPath)
-	if repoPath == "" {
-		return errors.New("path to repo must be set by flag " + flagRepoPath)
-	}
-
-	m, err := repomanager.New(repoPath)
-	if err != nil {
-		return errors.Wrap(err, "cannot build repo manager")
-	}
-
+func cmdLint(c *cli.Context, m *repomanager.Manager) error {
 	tags, err := m.GetTagsSemverTopN(100)
 	if err != nil {
-		return errors.Wrap(err, "cannot last semver tags")
+		return fmt.Errorf("cannot last semver tags: %w", err)
 	}
 
 	if len(tags) == 0 {
