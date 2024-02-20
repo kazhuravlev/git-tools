@@ -69,6 +69,10 @@ func (t SemverTag) TagName() string {
 	return t.Version.Original()
 }
 
+func (t SemverTag) CommitHash() string {
+	return t.Ref.Hash().String()
+}
+
 // GetTagsSemver returns only semver tags
 func (m *Manager) GetTagsSemver() ([]SemverTag, error) {
 	references, err := m.GetTagsAll()
