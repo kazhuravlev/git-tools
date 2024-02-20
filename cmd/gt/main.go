@@ -84,8 +84,8 @@ func main() {
 	}
 }
 
-func buildTagIncrementor(component repomanager.Component) func(*cli.Context, *repomanager.Manager) error {
-	return func(c *cli.Context, m *repomanager.Manager) error {
+func buildTagIncrementor(component repomanager.Component) func(context.Context, *cli.Command, *repomanager.Manager) error {
+	return func(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
 		repoPath := c.String(flagRepoPath)
 		if repoPath == "" {
 			return errors.New("path to repo must be set by flag " + flagRepoPath)
@@ -112,7 +112,7 @@ func buildTagIncrementor(component repomanager.Component) func(*cli.Context, *re
 	}
 }
 
-func cmdTagGetSemverLast(c *cli.Context, m *repomanager.Manager) error {
+func cmdTagGetSemverLast(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
 	maxTag, err := m.GetTagsSemverMax()
 	if err != nil {
 		return fmt.Errorf("cannot get max tag: %w", err)
@@ -122,7 +122,7 @@ func cmdTagGetSemverLast(c *cli.Context, m *repomanager.Manager) error {
 	return nil
 }
 
-func cmdLint(c *cli.Context, m *repomanager.Manager) error {
+func cmdLint(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
 	tags, err := m.GetTagsSemverTopN(100)
 	if err != nil {
 		return fmt.Errorf("cannot last semver tags: %w", err)
