@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-
 	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
 	"github.com/urfave/cli/v3"
+	"os"
+	"strings"
 )
 
 const (
@@ -157,12 +157,24 @@ func cmdLint(ctx context.Context, c *cli.Command, m *repomanager.Manager) error 
 
 	hasPrefix := tags[0].HasPrefixV()
 	var hasErrors bool
+	commit2tags := make(map[string][]string, len(tags))
 	for i := range tags {
 		tag := &tags[i]
 		if tag.HasPrefixV() != hasPrefix {
 			fmt.Printf("Tag `%s` not in one style with others.\n", tag.TagName())
 			hasErrors = true
 		}
+
+		commit2tags[tag.CommitHash()] = append(commit2tags[tag.CommitHash()], tag.TagName())
+	}
+
+	for commitHash, commitTags := range commit2tags {
+		if len(commitTags) == 1 {
+			continue
+		}
+
+		fmt.Printf("Commit `%s` have a several semver tags: `%s`.\n", commitHash, strings.Join(commitTags, ", "))
+		hasErrors = true
 	}
 
 	if hasErrors {
