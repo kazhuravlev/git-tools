@@ -55,3 +55,10 @@ gt --repo /path/to/repo tag last
 | `t i minor` | Find the last semver tag, increment minor part and add tag to local repo |
 | `t i patch` | Find the last semver tag, increment patch part and add tag to local repo |
 | `lint`      | Run linter, that check the problems.                                     |
+
+### Force add new semver tag
+
+By default `gt` will throw an error when you try to increment a tag on commit, that already have another semver tag.
+
+In order to skip this error - provide additional flag to increment command like
+that: `gt t i min --ignore-exists-tag`.

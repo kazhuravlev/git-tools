@@ -3,6 +3,8 @@ package repomanager
 import (
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5/plumbing/storer"
+	"github.com/kazhuravlev/optional"
 	"sort"
 	"strings"
 
@@ -65,6 +67,10 @@ func (t SemverTag) HasPrefixV() bool {
 
 func (t SemverTag) TagName() string {
 	return t.Version.Original()
+}
+
+func (t SemverTag) CommitHash() string {
+	return t.Ref.Hash().String()
 }
 
 // GetTagsSemver returns only semver tags
@@ -141,6 +147,45 @@ func (m *Manager) GetTagsSemverTopN(n int) ([]SemverTag, error) {
 	}
 
 	return res, nil
+}
+
+// GetCurrentTagSemver return a tag if that is presented for current commit. It will ignore all non-semver tags.
+func (m *Manager) GetCurrentTagSemver() (optional.Val[SemverTag], error) {
+	head, err := m.repo.Head()
+	if err != nil {
+		return optional.Empty[SemverTag](), fmt.Errorf("get repo head: %w", err)
+	}
+
+	tagReferences, err := m.repo.Tags()
+	if err != nil {
+		return optional.Empty[SemverTag](), fmt.Errorf("get repo tags: %w", err)
+	}
+
+	var tag optional.Val[SemverTag]
+	{
+		err := tagReferences.ForEach(func(t *plumbing.Reference) error {
+			if t.Hash() == head.Hash() {
+				version, err := semver.NewVersion(t.Name().Short())
+				if err != nil {
+					return nil
+				}
+
+				tag = optional.New(SemverTag{
+					Version: *version,
+					Ref:     t,
+				})
+
+				return storer.ErrStop
+			}
+
+			return nil
+		})
+		if err != nil {
+			return optional.Empty[SemverTag](), fmt.Errorf("get repo tags: %w", err)
+		}
+	}
+
+	return tag, nil
 }
 
 // IncrementSemverTag will increment max semver tag and write tag to repo

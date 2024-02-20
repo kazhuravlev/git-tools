@@ -4,18 +4,27 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-
 	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
 	"github.com/urfave/cli/v3"
+	"os"
+	"strings"
 )
 
 const (
-	flagRepoPath = "repo"
+	flagRepoPath        = "repo"
+	flagIgnoreExistsTag = "ignore-exists-tag"
 )
 
 var (
 	version = "unknown-local-build"
+)
+
+var (
+	cliFlagIgnoreExistsTag = &cli.BoolFlag{
+		Name:  flagIgnoreExistsTag,
+		Usage: "Use this option to force adding a new semver tag event when another one is exists",
+		Value: false,
+	}
 )
 
 func main() {
@@ -45,18 +54,21 @@ func main() {
 							{
 								Name:    "major",
 								Aliases: []string{"maj"},
+								Flags:   []cli.Flag{cliFlagIgnoreExistsTag},
 								Action:  withManager(buildTagIncrementor(repomanager.ComponentMajor)),
 								Usage:   "increment major part of semver",
 							},
 							{
 								Name:    "minor",
 								Aliases: []string{"min"},
+								Flags:   []cli.Flag{cliFlagIgnoreExistsTag},
 								Action:  withManager(buildTagIncrementor(repomanager.ComponentMinor)),
 								Usage:   "increment minor part of semver",
 							},
 							{
 								Name:    "patch",
 								Aliases: []string{"pat"},
+								Flags:   []cli.Flag{cliFlagIgnoreExistsTag},
 								Action:  withManager(buildTagIncrementor(repomanager.ComponentPatch)),
 								Usage:   "increment patch part of semver",
 							},
@@ -86,6 +98,8 @@ func main() {
 
 func buildTagIncrementor(component repomanager.Component) func(context.Context, *cli.Command, *repomanager.Manager) error {
 	return func(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
+		ignoreExistsTag := c.Bool(flagIgnoreExistsTag)
+
 		repoPath := c.String(flagRepoPath)
 		if repoPath == "" {
 			return errors.New("path to repo must be set by flag " + flagRepoPath)
@@ -94,6 +108,15 @@ func buildTagIncrementor(component repomanager.Component) func(context.Context, 
 		m, err := repomanager.New(repoPath)
 		if err != nil {
 			return fmt.Errorf("cannot build repo manager: %w", err)
+		}
+
+		curTag, err := m.GetCurrentTagSemver()
+		if err != nil {
+			return fmt.Errorf("get current tag: %w", err)
+		}
+
+		if curTag.HasVal() && !ignoreExistsTag {
+			return fmt.Errorf("semver tag is already exists: %s", curTag.Val().TagName())
 		}
 
 		oldTag, newTag, err := m.IncrementSemverTag(component)
@@ -134,12 +157,24 @@ func cmdLint(ctx context.Context, c *cli.Command, m *repomanager.Manager) error 
 
 	hasPrefix := tags[0].HasPrefixV()
 	var hasErrors bool
+	commit2tags := make(map[string][]string, len(tags))
 	for i := range tags {
 		tag := &tags[i]
 		if tag.HasPrefixV() != hasPrefix {
 			fmt.Printf("Tag `%s` not in one style with others.\n", tag.TagName())
 			hasErrors = true
 		}
+
+		commit2tags[tag.CommitHash()] = append(commit2tags[tag.CommitHash()], tag.TagName())
+	}
+
+	for commitHash, commitTags := range commit2tags {
+		if len(commitTags) == 1 {
+			continue
+		}
+
+		fmt.Printf("Commit `%s` have a several semver tags: `%s`.\n", commitHash, strings.Join(commitTags, ", "))
+		hasErrors = true
 	}
 
 	if hasErrors {
