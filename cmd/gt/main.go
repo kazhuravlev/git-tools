@@ -96,6 +96,15 @@ func buildTagIncrementor(component repomanager.Component) func(context.Context, 
 			return fmt.Errorf("cannot build repo manager: %w", err)
 		}
 
+		curTag, err := m.GetCurrentTagSemver()
+		if err != nil {
+			return fmt.Errorf("get current tag: %w", err)
+		}
+
+		if curTag.HasVal() {
+			return fmt.Errorf("semver tag is already exists: %s", curTag.Val().TagName())
+		}
+
 		oldTag, newTag, err := m.IncrementSemverTag(component)
 		if err != nil {
 			return fmt.Errorf("cannot increment minor: %w", err)
