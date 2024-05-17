@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         go_version:
-          - "1.21"
+          - "1.22"
         os: [ ubuntu-latest, macOS-latest, windows-latest ]
 
     steps:
