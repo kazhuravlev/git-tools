@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Hooks: Install All" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="git-tools" />
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="hooks install all" />
+    <kind value="PACKAGE" />
+    <package value="github.com/kazhuravlev/git-tools/cmd/gt" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$/cmd/gt/main.go" />
+    <method v="2" />
+  </configuration>
+</component>
