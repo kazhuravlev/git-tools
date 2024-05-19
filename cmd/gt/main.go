@@ -220,7 +220,7 @@ func cmdLint(ctx context.Context, c *cli.Command, m *repomanager.Manager) error 
 
 func cmdHooksList(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
 	fmt.Printf("commit-msg\n")
-	fmt.Printf("pre-commit\n")
+	//fmt.Printf("pre-commit\n")
 
 	return nil
 }
