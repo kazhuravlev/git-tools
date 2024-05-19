@@ -238,7 +238,6 @@ func cmdHooksInstallAll(ctx context.Context, c *cli.Command, m *repomanager.Mana
 
 	hooks := []string{
 		"commit-msg",
-		"pre-commit",
 	}
 	for i := range hooks {
 		hookFilename := filepath.Join(".git", "hooks", hooks[i])
