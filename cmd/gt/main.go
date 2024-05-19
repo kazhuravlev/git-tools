@@ -228,6 +228,7 @@ func cmdHooksList(ctx context.Context, c *cli.Command, m *repomanager.Manager) e
 func cmdHookExec(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
 	fmt.Println("HEyy!!!")
 	os.Exit(0)
+	// TODO: implement
 	return nil
 }
 
