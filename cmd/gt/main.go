@@ -102,10 +102,18 @@ func main() {
 						Usage:   "list available hooks",
 					},
 					{
-						Name:    "exec",
-						Aliases: []string{"e"},
-						Action:  withManager(cmdHookExec),
-						Usage:   "execute hook",
+						Name:  "exec",
+						Usage: "execute hook",
+						Commands: []*cli.Command{
+							{
+								Name:   "commit-msg",
+								Action: withManager(cmdHookExecCommitMsg),
+							},
+							{
+								Name:   "pre-commit",
+								Action: withManager(cmdHookExecPreCommit),
+							},
+						},
 					},
 					{
 						Name:    "install",
@@ -225,10 +233,29 @@ func cmdHooksList(ctx context.Context, c *cli.Command, m *repomanager.Manager) e
 	return nil
 }
 
-func cmdHookExec(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
-	fmt.Println("HEyy!!!")
-	os.Exit(0)
+func cmdHookExecCommitMsg(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
+	branch, err := m.GetCurrentBranch()
+	if err != nil {
+		return fmt.Errorf("cannot get current branch: %w", err)
+	}
+
+	commitMsgFilename := c.Args().First()
+	commitBuf, err := os.ReadFile(commitMsgFilename)
+	if err != nil {
+		return fmt.Errorf("cannot read commit-msg: %w", err)
+	}
+
+	commitMessage := fmt.Sprintf("%s %s", branch, string(commitBuf))
+	if err := os.WriteFile(commitMsgFilename, []byte(commitMessage), 0644); err != nil {
+		return fmt.Errorf("cannot write commit-msg: %w", err)
+	}
+
+	return nil
+}
+
+func cmdHookExecPreCommit(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
 	// TODO: implement
+
 	return nil
 }
 
