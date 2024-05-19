@@ -239,6 +239,7 @@ func cmdHooksInstallAll(ctx context.Context, c *cli.Command, m *repomanager.Mana
 
 	hooks := []string{
 		"commit-msg",
+		//"pre-commit",
 	}
 	for i := range hooks {
 		hookFilename := filepath.Join(".git", "hooks", hooks[i])
@@ -267,10 +268,11 @@ func cmdHooksInstallAll(ctx context.Context, c *cli.Command, m *repomanager.Mana
 
 		content = append(content, fmt.Sprintf(`
 if command -v gt >/dev/null 2>&1; then
-  gt hooks exec %s
+  gt hooks exec %s $1
 else
   echo "Can't find git-tools (gt binary)"
   echo "Check the docs https://github.com/kazhuravlev/git-tools"
+	exit 1
 fi
 `, hooks[i]))
 		content = append(content, "")
