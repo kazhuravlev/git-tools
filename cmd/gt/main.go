@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -108,10 +109,6 @@ func main() {
 							{
 								Name:   "commit-msg",
 								Action: withManager(cmdHookExecCommitMsg),
-							},
-							{
-								Name:   "pre-commit",
-								Action: withManager(cmdHookExecPreCommit),
 							},
 						},
 					},
@@ -227,8 +224,7 @@ func cmdLint(ctx context.Context, c *cli.Command, m *repomanager.Manager) error 
 }
 
 func cmdHooksList(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
-	fmt.Printf("commit-msg\n")
-	//fmt.Printf("pre-commit\n")
+	fmt.Println("commit-msg")
 
 	return nil
 }
@@ -253,12 +249,6 @@ func cmdHookExecCommitMsg(ctx context.Context, c *cli.Command, m *repomanager.Ma
 	return nil
 }
 
-func cmdHookExecPreCommit(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
-	// TODO: implement
-
-	return nil
-}
-
 func cmdHooksInstallAll(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
 	// backup current hooks
 	// add notes about backed up hooks
@@ -266,7 +256,6 @@ func cmdHooksInstallAll(ctx context.Context, c *cli.Command, m *repomanager.Mana
 
 	hooks := []string{
 		"commit-msg",
-		//"pre-commit",
 	}
 	for i := range hooks {
 		hookFilename := filepath.Join(".git", "hooks", hooks[i])
@@ -289,7 +278,7 @@ func cmdHooksInstallAll(ctx context.Context, c *cli.Command, m *repomanager.Mana
 				return fmt.Errorf("remove hook file: %w", err)
 			}
 
-			content = append(content, fmt.Sprintf("# hook file (%s) is backed up into (%s)", hookFilename, hookFilenameBackup))
+			content = append(content, fmt.Sprintf("# hook file (%s) is backed up into (%s) at (%s)", hookFilename, hookFilenameBackup, time.Now().Format(time.DateTime)))
 			content = append(content, "")
 		}
 
