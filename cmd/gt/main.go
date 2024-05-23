@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -266,23 +267,20 @@ func cmdHooksInstallAll(ctx context.Context, c *cli.Command, m *repomanager.Mana
 			return fmt.Errorf("backup file: %w", err)
 		}
 
-		var content []string
-		content = append(content, "#!/bin/sh")
-		content = append(content, "")
-		content = append(content, "## NOTE: Code-Generated")
-		content = append(content, "## This file was created automatically by https://github.com/kazhuravlev/git-tools program")
-		content = append(content, "")
+		content := bytes.NewBuffer(nil)
+		content.WriteString("#!/bin/sh\n\n")
+		content.WriteString("## NOTE: Code-Generated\n")
+		content.WriteString("## This file was created automatically by https://github.com/kazhuravlev/git-tools\n\n")
 
 		if wasBackedUp {
 			if err := os.Remove(hookFilename); err != nil {
 				return fmt.Errorf("remove hook file: %w", err)
 			}
 
-			content = append(content, fmt.Sprintf("# hook file (%s) is backed up into (%s) at (%s)", hookFilename, hookFilenameBackup, time.Now().Format(time.DateTime)))
-			content = append(content, "")
+			content.WriteString(fmt.Sprintf("# hook file (%s) is backed up into (%s) at (%s)\n", hookFilename, hookFilenameBackup, time.Now().Format(time.DateTime)))
 		}
 
-		content = append(content, fmt.Sprintf(`
+		content.WriteString(fmt.Sprintf(`
 if command -v gt >/dev/null 2>&1; then
   gt hooks exec %s $1
 else
@@ -291,14 +289,14 @@ else
 	exit 1
 fi
 `, hooks[i]))
-		content = append(content, "")
+		content.WriteString("\n")
 
 		target, err := os.Create(hookFilename)
 		if err != nil {
 			return fmt.Errorf("open hook file: %w", err)
 		}
 
-		if _, err := target.WriteString(strings.Join(content, "\n")); err != nil {
+		if _, err := target.Write(content.Bytes()); err != nil {
 			return fmt.Errorf("write hook file: %w", err)
 		}
 
