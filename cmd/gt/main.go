@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
 	"github.com/urfave/cli/v3"
+	"io"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -87,6 +91,42 @@ func main() {
 				Aliases: []string{"l"},
 				Usage:   "run linter",
 				Action:  withManager(cmdLint),
+			},
+			{
+				Name:    "hooks",
+				Aliases: []string{"h"},
+				Usage:   "install and run hooks",
+				Commands: []*cli.Command{
+					{
+						Name:    "list",
+						Aliases: []string{"l"},
+						Action:  withManager(cmdHooksList),
+						Usage:   "list available hooks",
+					},
+					{
+						Name:  "exec",
+						Usage: "execute hook",
+						Commands: []*cli.Command{
+							{
+								Name:   "commit-msg",
+								Action: withManager(cmdHookExecCommitMsg),
+							},
+						},
+					},
+					{
+						Name:    "install",
+						Aliases: []string{"i"},
+						Usage:   "install git-tool CLI as git-hook program",
+						Commands: []*cli.Command{
+							{
+								Name:    "all",
+								Aliases: []string{"a"},
+								Action:  withManager(cmdHooksInstallAll),
+								Usage:   "install all supported git-hooks",
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -182,4 +222,126 @@ func cmdLint(ctx context.Context, c *cli.Command, m *repomanager.Manager) error 
 	}
 
 	return nil
+}
+
+func cmdHooksList(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
+	fmt.Println("commit-msg")
+
+	return nil
+}
+
+func cmdHookExecCommitMsg(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
+	branch, err := m.GetCurrentBranch()
+	if err != nil {
+		return fmt.Errorf("cannot get current branch: %w", err)
+	}
+
+	commitMsgFilename := c.Args().First()
+	commitBuf, err := os.ReadFile(commitMsgFilename)
+	if err != nil {
+		return fmt.Errorf("cannot read commit-msg: %w", err)
+	}
+
+	// TODO(zhuravlev): implement a different policies that can be configured through config file for this project.
+	commitMessage := fmt.Sprintf("%s %s", branch, string(commitBuf))
+	if err := os.WriteFile(commitMsgFilename, []byte(commitMessage), 0644); err != nil {
+		return fmt.Errorf("cannot write commit-msg: %w", err)
+	}
+
+	return nil
+}
+
+func cmdHooksInstallAll(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
+	// backup current hooks
+	// add notes about backed up hooks
+	// install ourself as hook executor
+
+	hooks := []string{
+		"commit-msg",
+	}
+	for i := range hooks {
+		hookFilename := filepath.Join(".git", "hooks", hooks[i])
+		hookFilenameBackup := hookFilename + "__backup"
+
+		wasBackedUp, err := backupFile(hookFilename, hookFilenameBackup)
+		if err != nil {
+			return fmt.Errorf("backup file: %w", err)
+		}
+
+		content := bytes.NewBuffer(nil)
+		content.WriteString("#!/bin/sh\n\n")
+		content.WriteString("## NOTE: Code-Generated\n")
+		content.WriteString("## This file was created automatically by https://github.com/kazhuravlev/git-tools\n\n")
+
+		if wasBackedUp {
+			if err := os.Remove(hookFilename); err != nil {
+				return fmt.Errorf("remove hook file: %w", err)
+			}
+
+			content.WriteString(fmt.Sprintf("# hook file (%s) is backed up into (%s) at (%s)\n", hookFilename, hookFilenameBackup, time.Now().Format(time.DateTime)))
+		}
+
+		content.WriteString(fmt.Sprintf(`
+if command -v gt >/dev/null 2>&1; then
+  gt hooks exec %s $1
+else
+  echo "Can't find git-tools (gt binary)"
+  echo "Check the docs https://github.com/kazhuravlev/git-tools"
+	exit 1
+fi
+`, hooks[i]))
+		content.WriteString("\n")
+
+		target, err := os.Create(hookFilename)
+		if err != nil {
+			return fmt.Errorf("open hook file: %w", err)
+		}
+
+		if _, err := target.Write(content.Bytes()); err != nil {
+			return fmt.Errorf("write hook file: %w", err)
+		}
+
+		if err := target.Close(); err != nil {
+			return fmt.Errorf("close hook file: %w", err)
+		}
+
+		if err := os.Chmod(hookFilename, 0755); err != nil {
+			return fmt.Errorf("chmod hook file: %w", err)
+		}
+
+		fmt.Println("Hook was installed:", hookFilename)
+	}
+
+	return nil
+}
+
+func backupFile(source, dest string) (bool, error) {
+	_, err := os.Stat(source)
+
+	switch {
+	default:
+		return false, fmt.Errorf("unknown error: %w", err)
+	case os.IsNotExist(err):
+		return false, nil // nothing was backed up
+	case err == nil:
+		in, err := os.Open(source)
+		if err != nil {
+			return false, fmt.Errorf("cannot open source file: %w", err)
+		}
+
+		defer in.Close()
+
+		out, err := os.Create(dest)
+		if err != nil {
+			return false, fmt.Errorf("cannot create destination file: %w", err)
+		}
+
+		defer out.Close()
+
+		if _, err := io.Copy(out, in); err != nil {
+			return false, fmt.Errorf("cannot copy source file to destination file: %w", err)
+		}
+
+		return true, nil
+	}
 }

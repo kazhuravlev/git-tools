@@ -233,3 +233,18 @@ func (m *Manager) IncrementSemverTag(c Component) (*SemverTag, *SemverTag, error
 		Ref:     ref,
 	}, nil
 }
+
+func (m *Manager) GetCurrentBranch() (string, error) {
+	ref, err := m.repo.Head()
+	if err != nil {
+		return "", fmt.Errorf("get repo head: %w", err)
+	}
+
+	if ref.Name().IsBranch() {
+		branchName := ref.Name().Short()
+
+		return branchName, nil
+	}
+
+	return "", fmt.Errorf("HEAD is not pointing to a branch")
+}
