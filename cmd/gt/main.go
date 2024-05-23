@@ -242,6 +242,7 @@ func cmdHookExecCommitMsg(ctx context.Context, c *cli.Command, m *repomanager.Ma
 		return fmt.Errorf("cannot read commit-msg: %w", err)
 	}
 
+	// TODO(zhuravlev): implement a different policies that can be configured through config file for this project.
 	commitMessage := fmt.Sprintf("%s %s", branch, string(commitBuf))
 	if err := os.WriteFile(commitMsgFilename, []byte(commitMessage), 0644); err != nil {
 		return fmt.Errorf("cannot write commit-msg: %w", err)
