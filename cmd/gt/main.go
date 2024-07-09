@@ -17,6 +17,12 @@ import (
 const (
 	flagRepoPath        = "repo"
 	flagIgnoreExistsTag = "ignore-exists-tag"
+	flagFormat          = "format"
+)
+
+const (
+	formatFull    = "full"
+	formatTagOnly = "tag"
 )
 
 var (
@@ -81,8 +87,18 @@ func main() {
 					{
 						Name:    "last",
 						Aliases: []string{"l"},
-						Action:  withManager(cmdTagGetSemverLast),
-						Usage:   "show last semver tag",
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:     flagFormat,
+								Usage:    "will change the output format",
+								Value:    formatFull,
+								Aliases:  []string{"f"},
+								OnlyOnce: true,
+								Required: false,
+							},
+						},
+						Action: withManager(cmdTagGetSemverLast),
+						Usage:  "show last semver tag",
 					},
 				},
 			},
@@ -176,12 +192,25 @@ func buildTagIncrementor(component repomanager.Component) func(context.Context, 
 }
 
 func cmdTagGetSemverLast(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
+	format := c.String(flagFormat)
+	switch format {
+	default:
+		return fmt.Errorf("unknown format: %s", format)
+	case formatFull, formatTagOnly:
+	}
+
 	maxTag, err := m.GetTagsSemverMax()
 	if err != nil {
 		return fmt.Errorf("cannot get max tag: %w", err)
 	}
 
-	fmt.Printf("%s (%s)\n", maxTag.TagName(), maxTag.Ref.Hash())
+	switch format {
+	case formatFull:
+		fmt.Printf("%s (%s)\n", maxTag.TagName(), maxTag.Ref.Hash())
+	case formatTagOnly:
+		fmt.Printf("%s\n", maxTag.TagName())
+	}
+
 	return nil
 }
 
