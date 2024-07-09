@@ -63,3 +63,15 @@ By default `gt` will throw an error when you try to increment a tag on commit, t
 
 In order to skip this error - provide additional flag to increment command like
 that: `gt t i min --ignore-exists-tag`.
+
+### Examples
+
+```shell
+# Get last semver tag in this repo
+$ gt tag last
+v1.9.0 (c2e70ec90579ba18fd73078e98f677aec75ae002)
+
+# Show only tag name (useful for ci/cd)
+$ gt tag last -f tag
+v1.9.0
+```
