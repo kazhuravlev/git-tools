@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
+	"github.com/kazhuravlev/git-tools/internal/which"
 	"github.com/urfave/cli/v3"
 	"io"
 	"os"
@@ -310,15 +311,25 @@ func cmdHooksInstallAll(ctx context.Context, c *cli.Command, m *repomanager.Mana
 			content.WriteString(fmt.Sprintf("# hook file (%s) is backed up into (%s) at (%s)\n", hookFilename, hookFilenameBackup, time.Now().Format(time.DateTime)))
 		}
 
+		gtExecutable := "gt"
+		if _, err := which.Executable(os.DirFS("/"), "gt"); err != nil {
+			p, err := os.Executable()
+			if err != nil {
+				return fmt.Errorf("cannot get executable: %w", err)
+			}
+
+			gtExecutable = p
+		}
+
 		content.WriteString(fmt.Sprintf(`
 if command -v gt >/dev/null 2>&1; then
-  gt hooks exec %s $1
+  %s hooks exec %s $1
 else
   echo "Can't find git-tools (gt binary)"
   echo "Check the docs https://github.com/kazhuravlev/git-tools"
 	exit 1
 fi
-`, hooks[i]))
+`, gtExecutable, hooks[i]))
 		content.WriteString("\n")
 
 		target, err := os.Create(hookFilename)
