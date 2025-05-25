@@ -263,7 +263,7 @@ func (m *Manager) GetAuthors() ([]Author, error) {
 	}
 
 	authorMap := make(map[string]*Author)
-	
+
 	err = commitIter.ForEach(func(c *object.Commit) error {
 		email := c.Author.Email
 		if _, exists := authorMap[email]; !exists {
@@ -274,12 +274,12 @@ func (m *Manager) GetAuthors() ([]Author, error) {
 			}
 		}
 		authorMap[email].Count++
-		
+
 		// Update name if it's different (use the most recent name)
 		if authorMap[email].Name != c.Author.Name && c.Author.When.After(c.Committer.When) {
 			authorMap[email].Name = c.Author.Name
 		}
-		
+
 		return nil
 	})
 	if err != nil {
