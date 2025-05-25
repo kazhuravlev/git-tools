@@ -3,6 +3,7 @@ package repomanager
 import (
 	"errors"
 	"fmt"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/kazhuravlev/optional"
 	"sort"
@@ -247,4 +248,54 @@ func (m *Manager) GetCurrentBranch() (string, error) {
 	}
 
 	return "", fmt.Errorf("HEAD is not pointing to a branch")
+}
+
+type Author struct {
+	Name  string
+	Email string
+	Count int
+}
+
+func (m *Manager) GetAuthors() ([]Author, error) {
+	commitIter, err := m.repo.CommitObjects()
+	if err != nil {
+		return nil, fmt.Errorf("get commit objects: %w", err)
+	}
+
+	authorMap := make(map[string]*Author)
+	
+	err = commitIter.ForEach(func(c *object.Commit) error {
+		email := c.Author.Email
+		if _, exists := authorMap[email]; !exists {
+			authorMap[email] = &Author{
+				Name:  c.Author.Name,
+				Email: email,
+				Count: 0,
+			}
+		}
+		authorMap[email].Count++
+		
+		// Update name if it's different (use the most recent name)
+		if authorMap[email].Name != c.Author.Name && c.Author.When.After(c.Committer.When) {
+			authorMap[email].Name = c.Author.Name
+		}
+		
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("iterate commits: %w", err)
+	}
+
+	// Convert map to slice
+	authors := make([]Author, 0, len(authorMap))
+	for _, author := range authorMap {
+		authors = append(authors, *author)
+	}
+
+	// Sort by commit count (descending)
+	sort.Slice(authors, func(i, j int) bool {
+		return authors[i].Count > authors[j].Count
+	})
+
+	return authors, nil
 }

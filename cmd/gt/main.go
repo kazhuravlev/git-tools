@@ -110,6 +110,12 @@ func main() {
 				Action:  withManager(cmdLint),
 			},
 			{
+				Name:    "authors",
+				Aliases: []string{"a"},
+				Usage:   "list all commit authors",
+				Action:  withManager(cmdAuthors),
+			},
+			{
 				Name:    "hooks",
 				Aliases: []string{"h"},
 				Usage:   "install and run hooks",
@@ -250,6 +256,43 @@ func cmdLint(ctx context.Context, c *cli.Command, m *repomanager.Manager) error 
 	if hasErrors {
 		os.Exit(1)
 	}
+
+	return nil
+}
+
+func cmdAuthors(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
+	authors, err := m.GetAuthors()
+	if err != nil {
+		return fmt.Errorf("cannot get authors: %w", err)
+	}
+
+	if len(authors) == 0 {
+		fmt.Println("No authors found")
+		return nil
+	}
+
+	// Calculate max widths for better formatting
+	maxNameLen := 0
+	maxEmailLen := 0
+	for _, author := range authors {
+		if len(author.Name) > maxNameLen {
+			maxNameLen = len(author.Name)
+		}
+		if len(author.Email) > maxEmailLen {
+			maxEmailLen = len(author.Email)
+		}
+	}
+
+	// Print header
+	fmt.Printf("%-*s | %-*s | %s\n", maxNameLen, "Name", maxEmailLen, "Email", "Commits")
+	fmt.Printf("%s-+-%s-+-%s\n", strings.Repeat("-", maxNameLen), strings.Repeat("-", maxEmailLen), strings.Repeat("-", 7))
+
+	// Print authors
+	for _, author := range authors {
+		fmt.Printf("%-*s | %-*s | %d\n", maxNameLen, author.Name, maxEmailLen, author.Email, author.Count)
+	}
+
+	fmt.Printf("\nTotal authors: %d\n", len(authors))
 
 	return nil
 }
