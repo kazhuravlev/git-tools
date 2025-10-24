@@ -33,7 +33,7 @@ go install github.com/kazhuravlev/git-tools/cmd/gt@latest
 
 **Homebrew**
 
-```shell 
+```shell
 brew install kazhuravlev/git-tools/git-tools
 ```
 
@@ -45,37 +45,57 @@ echo 'alias gt="docker run -it --rm -v `pwd`:/workdir kazhuravlev/gt:latest"' >>
 
 ## Usage
 
-By default, `gt` works with the repo in the current directory. If you want to
-specify another path to repo - add `--repo=/path/to/repo` flag.
+All commands work with the current directory by default. Use `--repo=/path/to/repo` to specify a different repository.
+
+### Commands
+
+**Tag Management:**
 
 ```shell
-gt --repo /path/to/repo tag last
+gt tag last              # Show last semver tag (alias: gt t l)
+gt tag last -f tag       # Show only tag name (useful for CI/CD)
+
+gt tag increment major   # Bump major version: v1.2.3 → v2.0.0 (alias: gt t i maj)
+gt tag increment minor   # Bump minor version: v1.2.3 → v1.3.0 (alias: gt t i min)
+gt tag increment patch   # Bump patch version: v1.2.3 → v1.2.4 (alias: gt t i pat)
 ```
 
-| Command             | Action                                                       |
-|---------------------|--------------------------------------------------------------|
-| `t l`               | Show last semver tag in this repo                            |
-| `t i major`         | Increment `major` part for semver                            |
-| `t i minor`         | Increment `minor` part for semver                            |
-| `t i patch`         | Increment `patch` part for semver                            |
-| `lint`              | Run linter, that check the problems                          |
-| `hooks install all` | Install commit-msg hook that adds branch name to each commit |
+**Other Commands:**
 
-### Force add new semver tag
+```shell
+gt lint                  # Validate tag format consistency
+gt authors               # List commit authors with statistics (alias: gt a)
+gt hooks install all     # Install git hooks (alias: gt h i a)
+gt hooks list            # List available hooks (alias: gt h l)
+```
 
-By default `gt` will throw an error when you try to increment a tag on commit, that already have another semver tag.
+### Options
 
-In order to skip this error - provide additional flag to increment command like
-that: `gt t i min --ignore-exists-tag`.
+**Force tag creation:**
+
+```shell
+# Create a new tag even if current commit already has a semver tag
+gt t i min --ignore-exists-tag
+```
+
+**Custom repository path:**
+
+```shell
+gt --repo=/path/to/repo tag last
+```
 
 ### Examples
 
 ```shell
-# Get last semver tag in this repo
-$ gt tag last
-v1.9.0 (c2e70ec90579ba18fd73078e98f677aec75ae002)
+# Typical workflow: commit, bump version, push
+git commit -am "Add new feature"
+gt t i min  # Creates v1.3.0 tag
+git push --follow-tags
 
-# Show only tag name (useful for ci/cd)
-$ gt tag last -f tag
-v1.9.0
+# CI/CD: Get version for build artifact
+VERSION=$(gt tag last -f tag)
+echo "Building version: $VERSION"
+
+# Check tag consistency before release
+gt lint
 ```
