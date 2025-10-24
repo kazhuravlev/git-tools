@@ -6,19 +6,22 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kazhuravlev/git-tools)](https://goreportcard.com/report/github.com/kazhuravlev/git-tools)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 
-Set of helpful tools to do a routine job.
+A CLI tool for managing git repositories with semantic versioning tags. Simplifies version bumping, tag validation, and
+git hook management.
 
-This tool can help you to work with a bunch of lib/services under your projects.
-Especially when you start a new project - you need to increment a version of the
-SDK repo too often. `gt` allows you to work
-like `git commit -a -m 'some changes' && gt t i min && gt p a`. This set of
-commands reads as "commit changes, increment minor version of last semver tag,
-push commits to the origin with tags". Pretty simple, huh?
+**Quick example:**
 
-`gt` try to follow a chosen format of semver tags which you choose (`v1.2.3`
-/`1.2.3`). If you want to follow a selected pattern, just add `gt` to your CI
-system or `git-hook` and check that all tags have one concrete format.
-See [Usage](#Usage).
+```shell
+git commit -am "changes" && gt t i min && git push --follow-tags
+# Commits changes, increments minor version (e.g., v1.2.3 → v1.3.0), ready to push
+```
+
+**Key features:**
+
+- Automatic semver tag incrementing (major/minor/patch)
+- Tag format consistency checking (`v1.2.3` vs `1.2.3`)
+- Git hook installation (commit-msg with branch name)
+- Author statistics
 
 ## Installation
 
