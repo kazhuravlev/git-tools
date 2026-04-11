@@ -6,8 +6,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kazhuravlev/git-tools)](https://goreportcard.com/report/github.com/kazhuravlev/git-tools)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 
-A CLI tool for managing git repositories with semantic versioning tags. Simplifies version bumping, tag validation, and
-git hook management.
+A CLI tool for managing git repositories with semantic versioning tags. It helps with version bumps, tag validation,
+author reporting, and lightweight git hook automation.
 
 **Quick example:**
 
@@ -19,9 +19,9 @@ git commit -am "changes" && gt t i min && git push --follow-tags
 **Key features:**
 
 - Automatic semver tag incrementing (major/minor/patch)
-- Tag format consistency checking (`v1.2.3` vs `1.2.3`)
-- Git hook installation (commit-msg with branch name)
-- Author statistics
+- Tag format consistency checking (`v1.2.3` vs `1.2.3`) and duplicate semver tags on the same commit
+- Git hook installation for `commit-msg`
+- Author statistics based on commit history
 
 ## Installation
 
@@ -37,10 +37,10 @@ go install github.com/kazhuravlev/git-tools/cmd/gt@latest
 brew install kazhuravlev/git-tools/git-tools
 ```
 
-**Docker (zsh)** (will work only in current directory)
+**Docker (zsh)**
 
 ```shell
-echo 'alias gt="docker run -it --rm -v `pwd`:/workdir kazhuravlev/gt:latest"' >> ~/.zshrc
+echo 'alias gt="docker run -it --rm -v $(pwd):/workdir -w /workdir kazhuravlev/gt:latest"' >> ~/.zshrc
  ```
 
 ## Usage
@@ -52,20 +52,20 @@ All commands work with the current directory by default. Use `--repo=/path/to/re
 **Tag Management:**
 
 ```shell
-gt tag last              # Show last semver tag (alias: gt t l)
-gt tag last -f tag       # Show only tag name (useful for CI/CD)
+gt tag last              # Show the highest semver tag and commit hash (alias: gt t l)
+gt tag last -f tag       # Show only the tag name (useful for CI/CD)
 
-gt tag increment major   # Bump major version: v1.2.3 → v2.0.0 (alias: gt t i maj)
-gt tag increment minor   # Bump minor version: v1.2.3 → v1.3.0 (alias: gt t i min)
-gt tag increment patch   # Bump patch version: v1.2.3 → v1.2.4 (alias: gt t i pat)
+gt tag increment major   # Create the next major tag: v1.2.3 → v2.0.0 (alias: gt t i maj)
+gt tag increment minor   # Create the next minor tag: v1.2.3 → v1.3.0 (alias: gt t i min)
+gt tag increment patch   # Create the next patch tag: v1.2.3 → v1.2.4 (alias: gt t i pat)
 ```
 
 **Other Commands:**
 
 ```shell
-gt lint                  # Validate tag format consistency
+gt lint                  # Validate recent semver tags for style consistency and duplicate tags per commit
 gt authors               # List commit authors with statistics (alias: gt a)
-gt hooks install all     # Install git hooks (alias: gt h i a)
+gt hooks install all     # Install supported git hooks into .git/hooks (alias: gt h i a)
 gt hooks list            # List available hooks (alias: gt h l)
 ```
 
@@ -77,6 +77,8 @@ gt hooks list            # List available hooks (alias: gt h l)
 # Create a new tag even if current commit already has a semver tag
 gt t i min --ignore-exists-tag
 ```
+
+By default, `gt tag increment ...` refuses to create a new semver tag if the current commit already has one.
 
 **Custom repository path:**
 
@@ -96,6 +98,12 @@ git push --follow-tags
 VERSION=$(gt tag last -f tag)
 echo "Building version: $VERSION"
 
-# Check tag consistency before release
+# Check recent tags before release
 gt lint
+
+# Show commit authors sorted by commit count
+gt authors
+
+# Install the commit-msg hook that prefixes the current branch name
+gt hooks install all
 ```
