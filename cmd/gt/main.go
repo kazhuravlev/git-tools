@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	repomanager "github.com/kazhuravlev/git-tools/internal/repo-manager"
 	"github.com/kazhuravlev/git-tools/internal/which"
@@ -162,16 +161,6 @@ func main() {
 func buildTagIncrementor(component repomanager.Component) func(context.Context, *cli.Command, *repomanager.Manager) error {
 	return func(ctx context.Context, c *cli.Command, m *repomanager.Manager) error {
 		ignoreExistsTag := c.Bool(flagIgnoreExistsTag)
-
-		repoPath := c.String(flagRepoPath)
-		if repoPath == "" {
-			return errors.New("path to repo must be set by flag " + flagRepoPath)
-		}
-
-		m, err := repomanager.New(repoPath)
-		if err != nil {
-			return fmt.Errorf("cannot build repo manager: %w", err)
-		}
 
 		curTag, err := m.GetCurrentTagSemver()
 		if err != nil {

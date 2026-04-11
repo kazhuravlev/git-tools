@@ -57,6 +57,30 @@ func (m *Manager) GetTagsAll() ([]*plumbing.Reference, error) {
 	return tags, nil
 }
 
+func (m *Manager) forEachSemverTag(fn func(SemverTag) error) error {
+	tagReferences, err := m.repo.Tags()
+	if err != nil {
+		return fmt.Errorf("get repo tags: %w", err)
+	}
+
+	err = tagReferences.ForEach(func(t *plumbing.Reference) error {
+		version, err := semver.NewVersion(t.Name().Short())
+		if err != nil {
+			return nil
+		}
+
+		return fn(SemverTag{
+			Version: *version,
+			Ref:     t,
+		})
+	})
+	if err != nil {
+		return fmt.Errorf("iterate semver tags: %w", err)
+	}
+
+	return nil
+}
+
 type SemverTag struct {
 	Version semver.Version
 	Ref     *plumbing.Reference
@@ -76,26 +100,13 @@ func (t SemverTag) CommitHash() string {
 
 // GetTagsSemver returns only semver tags
 func (m *Manager) GetTagsSemver() ([]SemverTag, error) {
-	references, err := m.GetTagsAll()
+	res := make([]SemverTag, 0)
+	err := m.forEachSemverTag(func(tag SemverTag) error {
+		res = append(res, tag)
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("get all tags: %w", err)
-	}
-
-	res := make([]SemverTag, 0, len(references))
-	for i := range references {
-		ref := references[i]
-
-		tagName := ref.Name().Short()
-
-		version, err := semver.NewVersion(tagName)
-		if err != nil {
-			continue
-		}
-
-		res = append(res, SemverTag{
-			Version: *version,
-			Ref:     ref,
-		})
+		return nil, fmt.Errorf("get semver tags: %w", err)
 	}
 
 	return res, nil
@@ -103,21 +114,17 @@ func (m *Manager) GetTagsSemver() ([]SemverTag, error) {
 
 // GetTagsSemverMax return tag that point to max semver version
 func (m *Manager) GetTagsSemverMax() (*SemverTag, error) {
-	tags, err := m.GetTagsSemver()
+	var maxTag SemverTag
+	var found bool
+	err := m.forEachSemverTag(func(tag SemverTag) error {
+		if !found || tag.Version.GreaterThan(&maxTag.Version) {
+			found = true
+			maxTag = tag
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("get semver tags: %w", err)
-	}
-
-	maxTag := SemverTag{
-		Version: *semver.MustParse("v0.0.0"),
-		Ref:     nil,
-	}
-	var found bool
-	for i := range tags {
-		if tags[i].Version.GreaterThan(&maxTag.Version) {
-			found = true
-			maxTag = tags[i]
-		}
 	}
 
 	if !found {
@@ -129,25 +136,39 @@ func (m *Manager) GetTagsSemverMax() (*SemverTag, error) {
 
 // GetTagsSemverTopN return top n semver tags
 func (m *Manager) GetTagsSemverTopN(n int) ([]SemverTag, error) {
-	tags, err := m.GetTagsSemver()
+	if n <= 0 {
+		return nil, nil
+	}
+
+	top := make([]SemverTag, 0, n)
+	err := m.forEachSemverTag(func(tag SemverTag) error {
+		if len(top) < n {
+			top = append(top, tag)
+			sort.Slice(top, func(i, j int) bool {
+				return top[i].Version.LessThan(&top[j].Version)
+			})
+			return nil
+		}
+
+		if !top[0].Version.LessThan(&tag.Version) {
+			return nil
+		}
+
+		top[0] = tag
+		sort.Slice(top, func(i, j int) bool {
+			return top[i].Version.LessThan(&top[j].Version)
+		})
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("get semver tags: %w", err)
 	}
 
-	sort.SliceStable(tags, func(i, j int) bool {
-		return tags[i].Version.LessThan(&tags[j].Version)
+	sort.Slice(top, func(i, j int) bool {
+		return top[i].Version.GreaterThan(&top[j].Version)
 	})
 
-	res := make([]SemverTag, 0, n)
-	for i := range tags {
-		if i == n {
-			break
-		}
-
-		res = append(res, tags[i])
-	}
-
-	return res, nil
+	return top, nil
 }
 
 // GetCurrentTagSemver return a tag if that is presented for current commit. It will ignore all non-semver tags.
@@ -157,33 +178,17 @@ func (m *Manager) GetCurrentTagSemver() (optional.Val[SemverTag], error) {
 		return optional.Empty[SemverTag](), fmt.Errorf("get repo head: %w", err)
 	}
 
-	tagReferences, err := m.repo.Tags()
-	if err != nil {
-		return optional.Empty[SemverTag](), fmt.Errorf("get repo tags: %w", err)
-	}
-
 	var tag optional.Val[SemverTag]
-	{
-		err := tagReferences.ForEach(func(t *plumbing.Reference) error {
-			if t.Hash() == head.Hash() {
-				version, err := semver.NewVersion(t.Name().Short())
-				if err != nil {
-					return nil
-				}
-
-				tag = optional.New(SemverTag{
-					Version: *version,
-					Ref:     t,
-				})
-
-				return storer.ErrStop
-			}
-
+	err = m.forEachSemverTag(func(candidate SemverTag) error {
+		if candidate.Ref.Hash() != head.Hash() {
 			return nil
-		})
-		if err != nil {
-			return optional.Empty[SemverTag](), fmt.Errorf("get repo tags: %w", err)
 		}
+
+		tag = optional.New(candidate)
+		return storer.ErrStop
+	})
+	if err != nil && !errors.Is(err, storer.ErrStop) {
+		return optional.Empty[SemverTag](), fmt.Errorf("get repo tags: %w", err)
 	}
 
 	return tag, nil
